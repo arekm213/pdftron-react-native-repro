@@ -8,7 +8,7 @@ target 'example' do
   # PDFTron
   use_frameworks!
   pod 'PDFNet', podspec: 'https://pdftron.com/downloads/ios/react-native/latest.podspec'
-  pod 'RNPdftron', :path => '../node_modules/react-native-pdftron'
+  pod 'RNPdftron', :path => '../node_modules/@pdftron/react-native-pdf'
   config = use_native_modules!
 
   # Flags change depending on the env values.
