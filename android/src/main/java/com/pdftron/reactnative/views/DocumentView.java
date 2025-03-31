@@ -21,6 +21,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import android.util.Log;
+
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactContext;
@@ -37,12 +45,15 @@ import com.pdftron.collab.ui.viewer.CollabManager;
 import com.pdftron.collab.ui.viewer.CollabViewerBuilder2;
 import com.pdftron.collab.ui.viewer.CollabViewerTabHostFragment2;
 import com.pdftron.collab.utils.Keys;
+import com.pdftron.pdf.PDFDraw;
 import com.pdftron.common.PDFNetException;
 import com.pdftron.fdf.FDFDoc;
 import com.pdftron.pdf.Action;
 import com.pdftron.pdf.ActionParameter;
 import com.pdftron.pdf.Annot;
+import com.pdftron.pdf.Bookmark;
 import com.pdftron.pdf.ColorPt;
+import com.pdftron.pdf.Destination;
 import com.pdftron.pdf.DigitalSignatureField;
 import com.pdftron.pdf.Element;
 import com.pdftron.pdf.ElementBuilder;
@@ -1071,6 +1082,70 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 {
                 ex.printStackTrace();
             }
         }
+    }
+
+    public String encodeImageToBase64(String imagePath) {
+        // Step 1: Read the image into a Bitmap object
+        File imgFile = new File(imagePath);
+        if (imgFile.exists() && imgFile.canRead()) {
+            Bitmap bitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+
+            // Step 2: Convert the Bitmap to a byte array
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+            byte[] byteArray = byteArrayOutputStream.toByteArray();
+
+            // Step 3: Encode the byte array to Base64
+            String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
+
+            return encoded;
+        } else {
+            // Handle error, file doesn't exist or can't be read
+            return null;
+        }
+    }
+
+    public String getBase64FromPageRect(int pageNumber, ReadableMap rectMap) {
+        if (getPdfViewCtrl() != null) {
+            try {
+                if (rectMap != null && rectMap.hasKey(KEY_X1) && rectMap.hasKey(KEY_Y1) &&
+                        rectMap.hasKey(KEY_X2) && rectMap.hasKey(KEY_Y2)) {
+                    double rectX1 = rectMap.getDouble(KEY_X1);
+                    double rectY1 = rectMap.getDouble(KEY_Y1);
+                    double rectX2 = rectMap.getDouble(KEY_X2);
+                    double rectY2 = rectMap.getDouble(KEY_Y2);
+                    com.pdftron.pdf.Rect rect = new com.pdftron.pdf.Rect(rectX1, rectY1, rectX2, rectY2);
+
+                    Page page = getPdfViewCtrl().getDoc().getPage(pageNumber);
+
+                    com.pdftron.pdf.Rect originalUserCrop = page.getBox(Page.e_crop);
+
+                    // Set the page crop box.
+                    page.setCropBox(rect);
+
+                    PDFDraw draw = new PDFDraw();
+                    // Select the crop region to be used for drawing.
+                    draw.setPageBox(Page.e_crop);
+                    // Set the output image resolution to 900 DPI.
+                    draw.setDPI(900);
+
+                    File root = android.os.Environment.getExternalStorageDirectory();
+                    String imagePath = root.getAbsolutePath() + "/download/PDF_snapshot.png";
+                    draw.export(page, imagePath, "PNG");
+                    File imgFile = new File(imagePath);
+                    String base64Image = encodeImageToBase64(imagePath);
+                    imgFile.delete();
+
+                    page.setBox(Page.e_crop, originalUserCrop);
+
+                    return base64Image;
+                }
+            } catch (PDFNetException ex) {
+                ex.printStackTrace();
+            }
+        }
+
+        return "";
     }
 
     public void smartZoom(int x, int y, boolean animated) {
@@ -3431,9 +3506,12 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 {
                     if (annotObj != null) {
                         WritableMap annotPair = Arguments.createMap();
                         Annot annot = new Annot(annotObj);
-                        String annotId = annot.getUniqueID().getAsPDFText();
+                        Obj objAnnotUID = annot.getUniqueID();
+                        if(objAnnotUID != null) {
+                            String annotId = objAnnotUID.getAsPDFText();
+                            annotPair.putString(KEY_ANNOTATION_ID, annotId);
+                        }
                         Integer page = safeGetObjAsInteger(annotObj, Keys.FDF_PAGE) + 1;
-                        annotPair.putString(KEY_ANNOTATION_ID, annotId);
                         annotPair.putInt(KEY_ANNOTATION_PAGE, page);
                         annotations.pushMap(annotPair);
                     }
@@ -4909,6 +4987,96 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 {
                 mPdfViewCtrlTabHostFragment.onOutlineOptionSelected(0);
             }
         }
+    }
+
+    // Builds an outline tree as an array of HashMaps
+    ArrayList<HashMap<String, Object>> buildOutlineTree(Bookmark item) {
+        ArrayList<HashMap<String, Object>> outline = new ArrayList<>();
+
+        try {
+            while (item.isValid()) {
+                HashMap<String, Object> bookmarkDict = new HashMap<>();
+                int indent = item.getIndent() - 1;
+                bookmarkDict.put("indent", indent);
+                bookmarkDict.put("title", String.valueOf(item.getTitle()));
+
+                // Set Action
+                Action action = item.getAction();
+                if (action.isValid()) {
+                    if (action.getType() == Action.e_GoTo) {
+                        Destination dest = action.getDest();
+                        if (dest.isValid()) {
+                            Page page = dest.getPage();
+                            bookmarkDict.put("page", page.getIndex());
+                        } else {
+                            bookmarkDict.put("page", "NULL");
+                        }
+                    } else {
+                        bookmarkDict.put("page", "NULL");
+                    }
+                } else {
+                    bookmarkDict.put("page", "NULL");
+                }
+
+                // Recursively build children sub-trees
+                if (item.hasChildren()) {
+                    bookmarkDict.put("children", buildOutlineTree(item.getFirstChild()));
+                }
+
+                outline.add(bookmarkDict);
+
+                item = item.getNext();
+            }
+        } catch (PDFNetException e) {
+            e.printStackTrace();
+        }
+
+        return outline;
+    }
+
+    private WritableArray convertToWritableArray(ArrayList<HashMap<String, Object>> list) {
+        WritableArray writableArray = Arguments.createArray();
+
+        for (HashMap<String, Object> map : list) {
+            WritableMap writableMap = Arguments.createMap();
+
+            for (String key : map.keySet()) {
+                Object value = map.get(key);
+                if (value instanceof String) {
+                    writableMap.putString(key, (String) value);
+                } else if (value instanceof Integer) {
+                    writableMap.putInt(key, (Integer) value);
+                } else if (value instanceof Boolean) {
+                    writableMap.putBoolean(key, (Boolean) value);
+                } else if (value instanceof Double) {
+                    writableMap.putDouble(key, (Double) value);
+                } else if (value instanceof ArrayList) {
+                    writableMap.putArray(key, convertToWritableArray((ArrayList<HashMap<String, Object>>) value));
+                } // Add other types as per your requirement
+            }
+
+            writableArray.pushMap(writableMap);
+        }
+
+        return writableArray;
+    }
+
+    public WritableArray getOutlineList() {
+        try {
+            PDFViewCtrl pdfViewCtrl = getPdfViewCtrl();
+            PDFDoc pdfDoc = pdfViewCtrl.getDoc();
+            Bookmark root = pdfDoc.getFirstBookmark();
+            ArrayList<HashMap<String, Object>> outlineTree = buildOutlineTree(root);
+            WritableArray outlineArray = convertToWritableArray(outlineTree);
+            return outlineArray;
+            // Gson gson = new Gson();
+            // String json = gson.toJson(outline);
+            // return json;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     public void openLayersList() {

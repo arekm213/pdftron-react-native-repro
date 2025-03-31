@@ -631,6 +631,15 @@ public class DocumentViewViewManager extends ViewGroupManager<DocumentView> {
         }
     }
 
+    public WritableArray getOutlineList(int tag) throws PDFNetException {
+        DocumentView documentView = mDocumentViews.get(tag);
+        if (documentView != null) {
+            return documentView.getOutlineList();
+        } else {
+            throw new PDFNetException("", 0L, getName(), "setToolMode", "Unable to find DocumentView.");
+        }
+    }
+
     public WritableArray getAllFields(int tag, int pageNumber) throws PDFNetException {
         DocumentView documentView = mDocumentViews.get(tag);
         if (documentView != null) {
@@ -989,6 +998,15 @@ public class DocumentViewViewManager extends ViewGroupManager<DocumentView> {
             documentView.zoomToRect(pageNumber, rect);
         } else {
             throw new PDFNetException("", 0L, getName(), "zoomToRect", "Unable to find DocumentView.");
+        }
+    }
+
+    public String getBase64FromPageRect(int tag, int pageNumber, ReadableMap rect) throws PDFNetException {
+        DocumentView documentView = mDocumentViews.get(tag);
+        if (documentView != null) {
+            return documentView.getBase64FromPageRect(pageNumber, rect);
+        } else {
+            throw new PDFNetException("", 0L, getName(), "getBase64FromPageRect", "Unable to find DocumentView.");
         }
     }
 
