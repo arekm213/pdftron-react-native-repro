@@ -12,6 +12,13 @@ const { DocumentViewManager } = NativeModules;
 import { Config } from "../Config/Config";
 import * as AnnotOptions from "../AnnotOptions/AnnotOptions";
 
+export interface OutlineItem {
+  indent: number;
+  title: string;
+  page?: number;
+  children?: OutlineItem[];
+}
+
 /**
  * Object containing PropTypes types for {@link DocumentView} class.
  * Also used to generate prop types for TS users.
@@ -1217,6 +1224,22 @@ export class DocumentView extends PureComponent<DocumentViewProps, any> {
     }
     return Promise.resolve();
   }
+
+  getOutlineList = () => {
+    const tag = findNodeHandle(this._viewerRef);
+    if (tag != null) {
+        return DocumentViewManager.getOutlineList(tag);
+    }
+    return Promise.resolve();
+  };
+
+  getBase64FromPageRect = (pageNumber: number, rect: AnnotOptions.Rect): Promise<void | string> => {
+    const tag = findNodeHandle(this._viewerRef);
+    if (tag != null) {
+      return DocumentViewManager.getBase64FromPageRect(tag, pageNumber, rect);
+    }
+    return Promise.resolve();
+  };
 
   openLayersList = (): Promise<void> => {
     const tag = findNodeHandle(this._viewerRef);
