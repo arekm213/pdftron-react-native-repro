@@ -16,7 +16,7 @@
     "deprecated-react-native-prop-types": "^2.3.0",
     "react": "^18.0.0",
     "react-native": "^0.69.1",
-    "react-native-pdftron": "github:arekm213/pdftron-react-native-repro#fb62dbae3662f84f829c4b55fda2644fa3079366"
+    "react-native-pdftron": "github:arekm213/pdftron-react-native-repro#ac0bb7e611094a264e07ceb480fdac6d1c6c2bf2"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",
