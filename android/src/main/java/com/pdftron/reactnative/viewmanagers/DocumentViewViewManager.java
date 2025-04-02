@@ -631,12 +631,12 @@ public class DocumentViewViewManager extends ViewGroupManager<DocumentView> {
         }
     }
 
-    public WritableArray getOutlineList(int tag) throws PDFNetException {
+    public void getOutlineList(int tag, Promise promise) {
         DocumentView documentView = mDocumentViews.get(tag);
         if (documentView != null) {
-            return documentView.getOutlineList();
+            documentView.getOutlineList(promise);
         } else {
-            throw new PDFNetException("", 0L, getName(), "setToolMode", "Unable to find DocumentView.");
+            promise.reject("getOutlineList Error", "Unable to find DocumentView.");
         }
     }
 

@@ -5108,22 +5108,41 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 {
         return writableArray;
     }
 
-    public WritableArray getOutlineList() {
+    public void getOutlineList(Promise promise) {
         try {
-            PDFViewCtrl pdfViewCtrl = getPdfViewCtrl();
-            PDFDoc pdfDoc = pdfViewCtrl.getDoc();
-            Bookmark root = pdfDoc.getFirstBookmark();
-            ArrayList<HashMap<String, Object>> outlineTree = buildOutlineTree(root);
-            WritableArray outlineArray = convertToWritableArray(outlineTree);
-            return outlineArray;
-            // Gson gson = new Gson();
-            // String json = gson.toJson(outline);
-            // return json;
+            CompletableFuture<WritableArray> future = null;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                future = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        PDFViewCtrl pdfViewCtrl = getPdfViewCtrl();
+                        pdfViewCtrl.docLockRead();
+                        try {
+                            PDFDoc pdfDoc = pdfViewCtrl.getDoc();
+                            Bookmark root = pdfDoc.getFirstBookmark();
+                            ArrayList<HashMap<String, Object>> outlineTree = buildOutlineTree(root);
+                            WritableArray outlineArray = convertToWritableArray(outlineTree);
+
+                            return outlineArray;
+                        } finally {
+                            pdfViewCtrl.docUnlockRead();
+                        }
+                    } catch (PDFNetException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                future.thenAccept(result -> {
+                            System.out.print(result);
+                            promise.resolve(result);
+                        })
+                        .exceptionally(e -> {
+                            System.out.println("Error: " + e.getMessage());
+                            promise.reject("Error:", e.getMessage());
+                            return null;
+                });
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        return null;
     }
 
     public void openLayersList() {

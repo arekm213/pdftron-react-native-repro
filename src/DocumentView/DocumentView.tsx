@@ -1225,7 +1225,7 @@ export class DocumentView extends PureComponent<DocumentViewProps, any> {
     return Promise.resolve();
   }
 
-  getOutlineList = () => {
+  getOutlineList = (): Promise<void> => {
     const tag = findNodeHandle(this._viewerRef);
     if (tag != null) {
         return DocumentViewManager.getOutlineList(tag);

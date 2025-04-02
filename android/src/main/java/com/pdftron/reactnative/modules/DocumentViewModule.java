@@ -160,8 +160,7 @@ public class DocumentViewModule extends ReactContextBaseJavaModule implements Ac
             @Override
             public void run() {
                 try {
-                    WritableArray outline = mDocumentViewInstance.getOutlineList(tag);
-                    promise.resolve(outline);
+                    mDocumentViewInstance.getOutlineList(tag, promise);
                 } catch (Exception e) {
                     promise.reject(e);
                 }
