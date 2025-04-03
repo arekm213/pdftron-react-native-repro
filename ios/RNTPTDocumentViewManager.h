@@ -173,6 +173,8 @@
 
 - (void)openOutlineListForDocumentViewTag:(NSNumber *)tag;
 
+- (NSString *)getOutlineListForDocumentViewTag:(NSNumber *)tag;
+
 - (void)openLayersListForDocumentViewTag:(NSNumber *)tag;
 
 - (void)openNavigationListsForDocumentViewTag:(NSNumber *) tag;

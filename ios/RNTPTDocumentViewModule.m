@@ -1332,6 +1332,20 @@ RCT_REMAP_METHOD(openOutlineList,
     }
 }
 
+RCT_REMAP_METHOD(getOutlineList,
+                 getOutlineListForDocumentViewTag: (nonnull NSNumber *)tag
+                 resolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+    @try {
+         NSString *outline = [[self documentViewManager] getOutlineListForDocumentViewTag:tag];
+        resolve(outline);
+    }
+    @catch (NSException *exception) {
+        reject(@"get_outline_list_failed", @"Failed to get outline list", [self errorFromException:exception]);
+    }
+}
+
 RCT_REMAP_METHOD(openLayersList,
                  openLayersListForDocumentViewTag: (nonnull NSNumber *)tag
                  resolver:(RCTPromiseResolveBlock)resolve
