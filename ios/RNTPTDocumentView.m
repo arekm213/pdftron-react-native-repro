@@ -6282,24 +6282,44 @@ NSMutableArray<NSMutableDictionary*> * BuildOutlineTree(PTBookmark *item) {
     return outline;
 }
 
-- (NSString *) getOutlineList {
+- (void) getOutlineList:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject {
     PTPDFDoc * doc = [self.currentDocumentViewController.pdfViewCtrl GetDoc];
-    PTBookmark *root = [doc GetFirstBookmark];
-    NSMutableArray<NSMutableDictionary*> *outline = BuildOutlineTree(root);
-
-    NSError *error;
-    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:outline
-                                                       options:NSJSONWritingPrettyPrinted
-                                                         error:&error];
-    if (!jsonData) {
-        NSLog(@"Error creating JSON data: %@", error);
-    }
-
-    NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-    NSLog(@"%@", jsonString);
-
-    return outline;
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+      @try {
+        [doc LockRead];
+        PTBookmark *root = [doc GetFirstBookmark];
+        NSMutableArray<NSMutableDictionary*> *outline = BuildOutlineTree(root);
+        
+        NSError *error;
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:outline
+                                                           options:NSJSONWritingPrettyPrinted
+                                                             error:&error];
+        if (!jsonData) {
+          NSLog(@"Error creating JSON data: %@", error);
+        }
+        
+        NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        NSLog(@"%@", jsonString);
+        dispatch_async(dispatch_get_main_queue(), ^{
+          resolve(jsonString);
+        });
+      }
+      @catch (NSException *exception) {
+        NSError *error = [NSError errorWithDomain:@"com.pdftron.react-native" code:0 userInfo:
+                          @{
+          NSLocalizedDescriptionKey: exception.name,
+          NSLocalizedFailureReasonErrorKey: exception.reason ?: @"",
+        }];
+        dispatch_async(dispatch_get_main_queue(), ^{
+          reject(@"getOutlineList", @"Failed to get outline list getOutlineList method", error);
+        });
+      }
+      @finally {
+        [doc UnlockRead];
+      }
+    });
 }
+
 
 -(void)openOutlineList
 {
