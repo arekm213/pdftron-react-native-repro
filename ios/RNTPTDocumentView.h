@@ -566,7 +566,7 @@ static NSString * const PTSignaturesManager_signatureDirectory = @"PTSignaturesM
 
 - (NSString *)getDocumentPath;
 
-- (void)getOutlineList:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
+- (NSString *)getOutlineList;
 
 - (NSMutableArray<NSDictionary *> *)getAllFieldsForDocumentViewTag:(int)pageNumber;
 

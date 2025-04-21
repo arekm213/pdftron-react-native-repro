@@ -1619,13 +1619,14 @@ RCT_CUSTOM_VIEW_PROPERTY(signatureColors, NSArray, RNTPTDocumentView)
     }
 }
 
-- (void)getOutlineListForDocumentViewTag:(NSNumber *)tag resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject
+- (NSString *)getOutlineListForDocumentViewTag:(NSNumber *)tag
 {
     RNTPTDocumentView *documentView = self.documentViews[tag];
     if (documentView) {
-      [documentView getOutlineList:resolve rejecter: reject];
+        return [documentView getOutlineList];
     } else {
         @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"Unable to find DocumentView for tag" userInfo:nil];
+        return nil;
     }
 }
 

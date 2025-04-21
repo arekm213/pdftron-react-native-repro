@@ -173,7 +173,7 @@
 
 - (void)openOutlineListForDocumentViewTag:(NSNumber *)tag;
 
-- (void)getOutlineListForDocumentViewTag:(NSNumber *)tag resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
+- (NSString *)getOutlineListForDocumentViewTag:(NSNumber *)tag;
 
 - (void)openLayersListForDocumentViewTag:(NSNumber *)tag;
 
