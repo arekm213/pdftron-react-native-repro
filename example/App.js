@@ -6,7 +6,8 @@ import {
   View,
   PermissionsAndroid,
   BackHandler,
-  Alert
+  Alert,
+  TouchableOpacity,
 } from 'react-native';
 
 import { DocumentView, RNPdftron, Config } from 'react-native-pdftron';
@@ -84,6 +85,16 @@ export default class App extends Component<Props> {
     };
 
     return (
+      <>
+        <TouchableOpacity
+          style={{backgroundColor: 'red', width: 100, height: 100}}
+          onPress={() => {
+            this._viewer.shareCopy(
+              {x1: 10.0, y1: 10.0, x2: 20.0, y2: 20.0},
+              true,
+            );
+          }}
+        />
       <DocumentView
           ref={(c) => this._viewer = c}
           // hideDefaultAnnotationToolbars={[Config.DefaultToolbars.Annotate]}
@@ -108,6 +119,7 @@ export default class App extends Component<Props> {
           setStampImageData = {this.setStampImageData}
           openOutlineList = {true}
         />
+      </>
     );
   }
 }
