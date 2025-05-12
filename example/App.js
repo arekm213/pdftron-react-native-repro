@@ -8,16 +8,49 @@ import {
   BackHandler,
   Alert,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 
 import { DocumentView, RNPdftron, Config } from 'react-native-pdftron';
+import RNFetchBlob from "rn-fetch-blob";
+
+let PictureDir = RNFetchBlob.fs.dirs.DocumentDir;
+
+const PATH_TO_SAVE_FILE = PictureDir + '/myDirectory/file.pdf';
+
+/*
+  In this example i download your example pdf doc using rnfetchblob to local files, and then open it from local files :)
+*/
 
 type Props = {};
 export default class App extends Component<Props> {
-
   constructor(props) {
     super(props);
+    this.state = {
+      fileUrl: undefined,
+    };
   }
+
+  componentDidMount() {
+    const {config, fs} = RNFetchBlob;
+    let options = {
+      fileCache: true,
+      path: PATH_TO_SAVE_FILE,
+    };
+    config(options)
+      .fetch(
+        'GET',
+        'https://pdftron.s3.amazonaws.com/downloads/pl/PDFTRON_about.pdf',
+      )
+      .then(res => {
+        const path = res.path();
+        this.setState({fileUrl: path});
+      })
+      .catch(e => {
+        console.log('e', e);
+      });
+  }
+
 
   onLeadingNavButtonPressed = () => {
     console.log('leading nav button pressed');
@@ -84,6 +117,14 @@ export default class App extends Component<Props> {
       [Config.CustomToolbarKey.Items]: [Config.Tools.annotationCreateArrow, Config.Tools.annotationCreateCallout, Config.Buttons.undo]
     };
 
+    if (!this.state.fileUrl) {
+      return (
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <ActivityIndicator />
+        </View>
+      );
+    }
+
     return (
       <>
         <TouchableOpacity
@@ -102,7 +143,7 @@ export default class App extends Component<Props> {
           hideAnnotationToolbarSwitcher={false}
           hideTopToolbars={false}
           hideTopAppNavBar={false}
-          document={path}
+          document={this.state.fileUrl}
           padStatusBar={true}
           showLeadingNavButton={true}
           leadingNavButtonIcon={Platform.OS === 'ios' ? 'ic_close_black_24px.png' : 'ic_arrow_back_white_24dp'}
